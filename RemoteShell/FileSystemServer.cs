@@ -199,6 +199,7 @@ namespace RemoteShell
 		}
         public override void OnRequest(ConnectContext context, HttpListenerRequest request, HttpListenerResponse response)
         {
+			this.fileOperation.BeforeOperation();
 			Stream reader = context.getReader();
 			Stream writer = context.getWriter();
 			byte code = (byte)reader.ReadByte();
@@ -331,6 +332,7 @@ namespace RemoteShell
 					Console.WriteLine("Error occurred in FileSystemServer.onRequest. Code: " + code);
 					break;
 			}
+			this.fileOperation.AfterOperation();
 		}
 
 		public FileSystemServer() : this(null, null, null, null)
@@ -340,7 +342,9 @@ namespace RemoteShell
 		{
 			if (workingDir == null) workingDir = Directory.GetCurrentDirectory();
 			this.fileOperation = new FileOperation(new List<String>() { workingDir });
+			this.fileOperation.BeforeOperation();
 			FileResult fileResult = fileOperation.chdir(workingDir);
+			this.fileOperation.AfterOperation();
 			if (fileResult.errorCode != 0)
 				throw new UnauthorizedAccessException(fileResult.message);
 		}

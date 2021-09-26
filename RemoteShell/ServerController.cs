@@ -60,16 +60,22 @@ namespace RemoteShell
                 listener.Close();
                 return;
             }
+            try
+            {
+                HttpListenerContext httpContext = listener.EndGetContext(result);
+                HttpListenerRequest request = httpContext.Request;
+                HttpListenerResponse response = httpContext.Response;
+                response.Headers.Add("Access-Control-Allow-Origin", "http://localhost");
+                byte[] bb = Encoding.UTF8.GetBytes(this.ReadIndexHtml(fileServerEntry));
+                response.OutputStream.Write(bb, 0, bb.Length);
 
-            HttpListenerContext httpContext = listener.EndGetContext(result);
-            HttpListenerRequest request = httpContext.Request;
-            HttpListenerResponse response = httpContext.Response;
-            response.Headers.Add("Access-Control-Allow-Origin", "http://localhost");
-            byte[] bb = Encoding.UTF8.GetBytes(this.ReadIndexHtml(fileServerEntry));
-            response.OutputStream.Write(bb, 0, bb.Length);
-            
-            request.InputStream.Close();
-            response.OutputStream.Close();
+                request.InputStream.Close();
+                response.OutputStream.Close();
+            }
+            catch (HttpListenerException e)
+            {
+                Console.WriteLine("Http server might have been closed.");
+            }
         }
         private bool RunTestServer(FileServerEntry fileServerEntry)
         {

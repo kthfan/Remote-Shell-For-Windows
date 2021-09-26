@@ -458,16 +458,24 @@ namespace RemoteShell
             // close listener if server is closed
             if (!listener.IsListening)
             {
+                this.Close();
                 listener.Abort();
                 listener.Close();
                 return;
             }
-            
-            HttpListenerContext httpContext = listener.EndGetContext(result);
-            HttpListenerRequest request = httpContext.Request;
-            HttpListenerResponse response = httpContext.Response;
+            try
+            {
+                HttpListenerContext httpContext = listener.EndGetContext(result);
+                HttpListenerRequest request = httpContext.Request;
+                HttpListenerResponse response = httpContext.Response;
 
-            this.OnRequest(request, response);
+                this.OnRequest(request, response);
+            }
+            catch(HttpListenerException e)
+            {
+                Console.WriteLine("Http server might have been closed.");
+            }
+            
         }
 
         public void Close()

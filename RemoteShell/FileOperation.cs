@@ -180,6 +180,9 @@ namespace RemoteShell
 
 		private ISet<String> AllowedPath = new HashSet<String>();
 
+		// switch to _cwd when doing operation, and switch back to initial directory when complete operation
+		private String _cwd = Directory.GetCurrentDirectory();
+
 		//private List<HttpWebRequest> _requestList = new List<HttpWebRequest>();
 
 		//private ExecutorService executorService = Executors.newCachedThreadPool();
@@ -195,6 +198,20 @@ namespace RemoteShell
 			{
 				this.AddAllowedPath(path);
 			}
+		}
+
+		// c# only, switch to _cwd when doing operation, and switch back to initial directory when complete operation.
+		public void BeforeOperation()
+        {
+			String tmp = this._cwd;
+			this._cwd = Directory.GetCurrentDirectory();
+			Directory.SetCurrentDirectory(tmp);
+		}
+		public void AfterOperation()
+		{
+			String tmp = this._cwd;
+			this._cwd = Directory.GetCurrentDirectory();
+			Directory.SetCurrentDirectory(tmp);
 		}
 
 		public void AddAllowedPath(String path)
@@ -784,24 +801,69 @@ namespace RemoteShell
 			httpRequest.Method = headers[0][0];
 			for (int i = 1; i < headers.Count; i++)
 			{
-				if (string.Equals(headers[i][0], "Host", StringComparison.OrdinalIgnoreCase))
-				{
-					httpRequest.Host = headers[i][1];
+                try
+                {
+					if (string.Equals(headers[i][0], "Host", StringComparison.OrdinalIgnoreCase))
+					{
+						httpRequest.Host = headers[i][1];
 
+					}
+					else if (string.Equals(headers[i][0], "Referer", StringComparison.OrdinalIgnoreCase))
+					{
+						httpRequest.Referer = headers[i][1];
+					}
+					else if (string.Equals(headers[i][0], "Accept", StringComparison.OrdinalIgnoreCase))
+					{
+						httpRequest.Accept = headers[i][1];
+					}
+					else if (string.Equals(headers[i][0], "User-Agent", StringComparison.OrdinalIgnoreCase))
+					{
+						httpRequest.UserAgent = headers[i][1];
+					}
+					else if (string.Equals(headers[i][0], "Content-Type", StringComparison.OrdinalIgnoreCase))
+					{
+						httpRequest.ContentType = headers[i][1];
+					}
+					else if (string.Equals(headers[i][0], "Content-Length", StringComparison.OrdinalIgnoreCase))
+					{
+						httpRequest.ContentLength = long.Parse(headers[i][1]);
+					}
+					else if (string.Equals(headers[i][0], "Date", StringComparison.OrdinalIgnoreCase))
+					{
+						httpRequest.Date = DateTime.ParseExact(headers[i][1],
+							"ddd, dd MMM yyyy HH:mm:ss 'UTC'",
+							System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat,
+							System.Globalization.DateTimeStyles.AssumeUniversal); ;
+					}
+					else if (string.Equals(headers[i][0], "If-Modified-Since", StringComparison.OrdinalIgnoreCase))
+					{
+						httpRequest.IfModifiedSince = DateTime.ParseExact(headers[i][1],
+							"ddd, dd MMM yyyy HH:mm:ss 'UTC'",
+							System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat,
+							System.Globalization.DateTimeStyles.AssumeUniversal); ;
+					}
+					else if (string.Equals(headers[i][0], "Connection", StringComparison.OrdinalIgnoreCase))
+					{
+						httpRequest.Connection = headers[i][1];
+					}
+					else if (string.Equals(headers[i][0], "Transfer-Encoding", StringComparison.OrdinalIgnoreCase))
+					{
+						httpRequest.TransferEncoding = headers[i][1];
+					}
+					else if (string.Equals(headers[i][0], "Transfer-Encoding", StringComparison.OrdinalIgnoreCase))
+					{
+						httpRequest.TransferEncoding = headers[i][1];
+					}
+					else if (string.Equals(headers[i][0], "Expect", StringComparison.OrdinalIgnoreCase))
+					{
+						httpRequest.Expect = headers[i][1];
+					}
+					else httpRequest.Headers.Add(headers[i][0], headers[i][1]);
 				}
-				else if (string.Equals(headers[i][0], "Referer", StringComparison.OrdinalIgnoreCase))
-				{
-					httpRequest.Referer = headers[i][1];
-				}
-				else if (string.Equals(headers[i][0], "Accept", StringComparison.OrdinalIgnoreCase))
-				{
-					httpRequest.Accept = headers[i][1];
-				}
-				else if (string.Equals(headers[i][0], "User-Agent", StringComparison.OrdinalIgnoreCase))
-				{
-					httpRequest.UserAgent = headers[i][1];
-				}
-				else httpRequest.Headers.Add(headers[i][0], headers[i][1]);
+				catch(SystemException e)
+                {
+					Console.WriteLine("Exception occured in parse header: " + headers[i][0] +  " : " + headers[i][1]);
+                }
 			}
 		}
 		private void FlushStreamAsync(Stream stream, long length)
